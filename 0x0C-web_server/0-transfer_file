@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Script to transfer s file from our local machine to a remote server
+# Script to transfer a file from our local machine to a remote server
 #
 # variables
 if [ $# -Lt 4]
