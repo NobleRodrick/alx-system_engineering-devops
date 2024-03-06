@@ -23,8 +23,8 @@ def count_variable_words(subreddit, word_list, after="", count_variable=[]):
     if request.status_code == 200:
         data = request.json()
 
-        for topic in (data['data']['children']):
-            for word in topic['data']['title'].split():
+        for defined_topic in (data['data']['children']):
+            for word in defined_topic['data']['title'].split():
                 for i in range(len(word_list)):
                     if word_list[i].lower() == word.lower():
                         count_variable[i] += 1
