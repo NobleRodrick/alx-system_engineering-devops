@@ -1,59 +1,47 @@
 #!/usr/bin/python3
-"""module for the reddit api
-the reddit api is something special"""
-
-import json
+"""
+Function to count words in all hot posts of a given Reddit subreddit.
+"""
 import requests
 
 
-def var_cnt_words(subreddit, list_of_words, after="", var_cnt=[]):
+def count_words(subreddit, word_list, after=None, counts={}):
     """
-    Write a recursive function that queries the Reddit API, parses the title
-    of all hot articles, and prints a sorted count of given keywords
-    (case-insensitive, delimited by spaces
+    Recursive function that queries the Reddit API, parses the title of all
+        hot articles, and prints a sorted count of given keywords
     """
+    if not word_list or word_list == [] or not subreddit:
+        return
 
-    if after == "":
-        var_cnt = [0] * len(list_of_words)
+    url = f"https://www.reddit.com/r/{subreddit}/hot.json"
+    headers = {"User-Agent": "Mozilla/5.0"}
 
-    url = "https://www.reddit.com/r/{}/hot.json".format(subreddit)
-    request = requests.get(url,
-                           params={'after': after},
-                           allow_redirects=False,
-                           headers={'user-agent': 'Nkefor'})
+    params = {"limit": 100}
+    if after:
+        params["after"] = after
 
-    if request.status_code == 200:
-        data = request.json()
+    response = requests.get(url,
+                            headers=headers,
+                            params=params,
+                            allow_redirects=False)
 
-        for topic in (data['data']['children']):
-            for word in topic['data']['title'].split():
-                for i in range(len(list_of_words)):
-                    if list_of_words[i].lower() == word.lower():
-                        var_cnt[i] += 1
+    if response.status_code != 200:
+        return
 
-        after = data['data']['after']
-        if after is None:
-            save = []
-            for i in range(len(list_of_words)):
-                for j in range(i + 1, len(list_of_words)):
-                    if list_of_words[i].lower() == list_of_words[j].lower():
-                        save.append(j)
-                        var_cnt[i] += var_cnt[j]
+    data = response.json()
+    children = data["data"]["children"]
 
-            for i in range(len(list_of_words)):
-                for j in range(i, len(list_of_words)):
-                    if (var_cnt[j] > var_cnt[i] or
-                            (list_of_words[i] > list_of_words[j] and
-                             var_cnt[j] == var_cnt[i])):
-                        aux = var_cnt[i]
-                        var_cnt[i] = var_cnt[j]
-                        var_cnt[j] = aux
-                        aux = list_of_words[i]
-                        list_of_words[i] = list_of_words[j]
-                        list_of_words[j] = aux
+    for post in children:
+        title = post["data"]["title"].lower()
+        for word in word_list:
+            if word.lower() in title:
+                counts[word] = counts.get(word, 0) + title.count(word.lower())
 
-            for i in range(len(list_of_words)):
-                if (var_cnt[i] > 0) and i not in save:
-                    print("{}: {}".format(list_of_words[i].lower(), var_cnt[i]))
-        else:
-            var_cnt_words(subreddit, list_of_words, after, var_cnt)
+    after = data["data"]["after"]
+    if after:
+        count_words(subreddit, word_list, after, counts)
+    else:
+        sorted_counts = sorted(counts.items(),
+                               key=lambda x: (-x[1], x[0].lower()))
+        for word, count in sorted_counts:
+            print(f"{word.lower()}: {count}")
